@@ -127,12 +127,8 @@ echo Update complete! Version {remote} installed.
 """
             apply_bat.write_text(apply_content)
         
-        print(f"\nApplying update...")
-        # Run the apply script directly
-        import subprocess
-        subprocess.run([str(apply_bat)], shell=True)
-        print(f"Update to {remote} complete!")
-        return True
+        print(f"\nUpdate staged. It will be applied automatically.")
+        return False
     else:
         # Unix: can overwrite in place
         print("Downloading...")
