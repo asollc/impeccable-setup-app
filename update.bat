@@ -20,6 +20,13 @@ if errorlevel 1 (
 )
 
 python "%~dp0update.py"
+echo.
+REM Auto-apply if update was just staged
+if exist "%~dp0apply_update.bat" (
+    echo Applying staged update...
+    call "%~dp0apply_update.bat"
+    echo.
+)
 
 :end
 echo.
