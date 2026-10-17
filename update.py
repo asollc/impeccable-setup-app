@@ -127,9 +127,8 @@ echo Update complete! Version {remote} installed.
 """
             apply_bat.write_text(apply_content)
         
-        print(f"\nUpdate downloaded. Run apply_update.bat to install version {remote}.")
-        print("The current operation will continue with the old version.")
-        return False  # Don't block current operation
+        print(f"\nUpdate staged. The launcher will apply it automatically.")
+        return False
     else:
         # Unix: can overwrite in place
         print("Downloading...")
