@@ -113,7 +113,14 @@ def check_and_update():
             apply_bat = app_dir / "apply_update.bat"
             apply_content = f"""@echo off
 echo Applying update to {remote}...
-xcopy /E /Y "{stage_dir}" "{app_dir}\\" >nul
+echo From: {stage_dir}
+echo To: {app_dir}
+xcopy /E /Y "{stage_dir}" "{app_dir}\\"
+if errorlevel 1 (
+    echo ERROR: Copy failed with code %errorlevel%
+    pause
+    exit /b 1
+)
 rmdir /S /Q "{stage_dir}"
 del "%~f0"
 echo Update complete! Version {remote} installed.
