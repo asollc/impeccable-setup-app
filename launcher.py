@@ -16,7 +16,10 @@ from pathlib import Path
 
 def check_node():
     try:
-        result = subprocess.run(["node", "--version"], capture_output=True, text=True, timeout=5)
+        if os.name == "nt":
+            result = subprocess.run(["node", "--version"], capture_output=True, text=True, timeout=5, shell=True)
+        else:
+            result = subprocess.run(["node", "--version"], capture_output=True, text=True, timeout=5)
         return result.returncode == 0
     except:
         return False
@@ -24,7 +27,11 @@ def check_node():
 
 def check_npm():
     try:
-        result = subprocess.run(["npm", "--version"], capture_output=True, text=True, timeout=5)
+        # On Windows, npm is npm.cmd and needs shell=True
+        if os.name == "nt":
+            result = subprocess.run(["npm", "--version"], capture_output=True, text=True, timeout=5, shell=True)
+        else:
+            result = subprocess.run(["npm", "--version"], capture_output=True, text=True, timeout=5)
         return result.returncode == 0
     except:
         return False
