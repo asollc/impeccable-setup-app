@@ -61,28 +61,29 @@ def check_and_update():
     print(f"\nUpdate available: {local} -> {remote}")
     
     # On Windows, we can't overwrite running files, so stage the update
-    # and create a batch file to apply it
+    # in SYSTEM TEMP (never inside app_dir to avoid nesting bugs)
     if os.name == "nt":
         print("Downloading update...")
         zip_url = f"https://github.com/{REPO}/archive/refs/tags/v{remote}.zip"
         
         app_dir = Path(__file__).parent
         
-        # Aggressively clean up ALL staging dirs (including nested ones)
-        # Do this before defining stage_dir to catch everything
-        for _ in range(3):  # Multiple passes for nested structures
+        # Clean up ALL old staging dirs inside app_dir (from buggy versions)
+        for _ in range(5):
             found = list(app_dir.rglob(".update_staged"))
             if not found:
                 break
-            for p in found:
-                # Remove deepest first to avoid issues
+            # Deepest first
+            for p in sorted(found, key=lambda x: len(str(x)), reverse=True):
                 try:
-                    shutil.rmtree(p, ignore_errors=False)
+                    shutil.rmtree(p)
                 except:
                     pass
         
-        stage_dir = app_dir / ".update_staged"
-        # Final check
+        # Stage in system temp, versioned by remote version
+        stage_base = Path(tempfile.gettempdir()) / "impeccable_updates"
+        stage_base.mkdir(exist_ok=True)
+        stage_dir = stage_base / f"v{remote}"
         if stage_dir.exists():
             shutil.rmtree(stage_dir, ignore_errors=True)
         
