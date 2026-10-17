@@ -32,7 +32,6 @@ def get_remote_version():
         req = urllib.request.Request(url, headers={"User-Agent": "impeccable-setup-app"})
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read())
-            # Tag format: v1.0.0, strip the v
             tag = data.get("tag_name", "v0.0.0")
             return tag.lstrip("v"), data
     except Exception as e:
@@ -62,17 +61,8 @@ def check_and_update():
     print(f"\nUpdate available: {local} -> {remote}")
     print("Downloading...")
     
-    # Find the zip asset
-    assets = release_data.get("assets", [])
-    zip_url = None
-    for asset in assets:
-        if asset["name"].endswith(".zip"):
-            zip_url = asset["browser_download_url"]
-            break
-    
-    if not zip_url:
-        print("No zip asset found in release.")
-        return False
+    # Download the release archive (works for public repos without auth)
+    zip_url = f"https://github.com/{REPO}/archive/refs/tags/v{remote}.zip"
     
     # Download to temp
     app_dir = Path(__file__).parent
@@ -87,6 +77,11 @@ def check_and_update():
         
         # Copy new files over (preserve the update script itself during copy)
         extracted = Path(tmpdir) / "extracted"
+        # GitHub archive has a top-level dir like impeccable-setup-app-1.0.0/
+        subdirs = [d for d in extracted.iterdir() if d.is_dir()]
+        if len(subdirs) == 1:
+            extracted = subdirs[0]
+        
         for item in extracted.rglob("*"):
             if item.is_file():
                 rel = item.relative_to(extracted)
