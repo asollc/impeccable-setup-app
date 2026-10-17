@@ -1,4 +1,10 @@
 @echo off
+REM Auto-apply pending update if exists
+if exist "%~dp0apply_update.bat" (
+    echo Applying pending update...
+    call "%~dp0apply_update.bat"
+    echo.
+)
 REM Pack and Send - Zip website changes for Gigi to push live
 REM Drag your project folder onto this file
 
