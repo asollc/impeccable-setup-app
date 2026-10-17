@@ -2,6 +2,7 @@
 """
 Auto-updater for Impeccable Setup App.
 Checks GitHub for a new version and updates if available.
+Safe for Windows: stages update and applies via separate batch.
 """
 
 import json
@@ -26,7 +27,6 @@ def get_local_version():
 
 
 def get_remote_version():
-    """Get the latest version from GitHub."""
     url = f"https://api.github.com/repos/{REPO}/releases/latest"
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "impeccable-setup-app"})
@@ -59,41 +59,84 @@ def check_and_update():
         return False
     
     print(f"\nUpdate available: {local} -> {remote}")
-    print("Downloading...")
     
-    # Download the release archive (works for public repos without auth)
-    zip_url = f"https://github.com/{REPO}/archive/refs/tags/v{remote}.zip"
-    
-    # Download to temp
-    app_dir = Path(__file__).parent
-    with tempfile.TemporaryDirectory() as tmpdir:
-        zip_path = Path(tmpdir) / "update.zip"
-        urllib.request.urlretrieve(zip_url, zip_path)
+    # On Windows, we can't overwrite running files, so stage the update
+    # and create a batch file to apply it
+    if os.name == "nt":
+        print("Downloading update...")
+        zip_url = f"https://github.com/{REPO}/archive/refs/tags/v{remote}.zip"
         
-        print("Installing update...")
-        # Extract over the current directory
-        with zipfile.ZipFile(zip_path, 'r') as z:
-            z.extractall(tmpdir + "/extracted")
+        app_dir = Path(__file__).parent
+        stage_dir = app_dir / ".update_staged"
+        stage_dir.mkdir(exist_ok=True)
         
-        # Copy new files over (preserve the update script itself during copy)
-        extracted = Path(tmpdir) / "extracted"
-        # GitHub archive has a top-level dir like impeccable-setup-app-1.0.0/
-        subdirs = [d for d in extracted.iterdir() if d.is_dir()]
-        if len(subdirs) == 1:
-            extracted = subdirs[0]
+        with tempfile.TemporaryDirectory() as tmpdir:
+            zip_path = Path(tmpdir) / "update.zip"
+            try:
+                urllib.request.urlretrieve(zip_url, zip_path)
+            except Exception as e:
+                print(f"Download failed: {e}")
+                return False
+            
+            print("Staging update...")
+            with zipfile.ZipFile(zip_path, 'r') as z:
+                z.extractall(tmpdir + "/extracted")
+            
+            extracted = Path(tmpdir) / "extracted"
+            subdirs = [d for d in extracted.iterdir() if d.is_dir()]
+            if len(subdirs) == 1:
+                extracted = subdirs[0]
+            
+            # Copy to staging
+            if stage_dir.exists():
+                shutil.rmtree(stage_dir)
+            shutil.copytree(extracted, stage_dir)
+            
+            # Create apply script
+            apply_bat = app_dir / "apply_update.bat"
+            apply_content = f"""@echo off
+echo Applying update to {remote}...
+xcopy /E /Y "{stage_dir}" "{app_dir}\\" >nul
+rmdir /S /Q "{stage_dir}"
+del "%~f0"
+echo Update complete! Version {remote} installed.
+pause
+"""
+            apply_bat.write_text(apply_content)
         
-        for item in extracted.rglob("*"):
-            if item.is_file():
-                rel = item.relative_to(extracted)
-                dest = app_dir / rel
-                dest.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(item, dest)
+        print(f"\nUpdate downloaded. Run apply_update.bat to install version {remote}.")
+        print("The current operation will continue with the old version.")
+        return False  # Don't block current operation
+    else:
+        # Unix: can overwrite in place
+        print("Downloading...")
+        zip_url = f"https://github.com/{REPO}/archive/refs/tags/v{remote}.zip"
+        app_dir = Path(__file__).parent
         
-        # Update version file
-        VERSION_FILE.write_text(remote)
-    
-    print(f"Updated to version {remote}!")
-    return True
+        with tempfile.TemporaryDirectory() as tmpdir:
+            zip_path = Path(tmpdir) / "update.zip"
+            urllib.request.urlretrieve(zip_url, zip_path)
+            
+            print("Installing update...")
+            with zipfile.ZipFile(zip_path, 'r') as z:
+                z.extractall(tmpdir + "/extracted")
+            
+            extracted = Path(tmpdir) / "extracted"
+            subdirs = [d for d in extracted.iterdir() if d.is_dir()]
+            if len(subdirs) == 1:
+                extracted = subdirs[0]
+            
+            for item in extracted.rglob("*"):
+                if item.is_file():
+                    rel = item.relative_to(extracted)
+                    dest = app_dir / rel
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(item, dest)
+            
+            VERSION_FILE.write_text(remote)
+        
+        print(f"Updated to version {remote}!")
+        return True
 
 
 if __name__ == "__main__":
