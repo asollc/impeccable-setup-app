@@ -1,4 +1,10 @@
 @echo off
+REM Auto-apply pending update if exists
+if exist "%~dp0apply_update.bat" (
+    echo Applying pending update...
+    call "%~dp0apply_update.bat"
+    echo.
+)
 REM Live Launcher - Start dev server + live mode with one click
 REM Drag your project folder onto this file
 
