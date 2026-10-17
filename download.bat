@@ -1,4 +1,10 @@
 @echo off
+REM Auto-apply pending update if exists
+if exist "%~dp0apply_update.bat" (
+    echo Applying pending update...
+    call "%~dp0apply_update.bat"
+    echo.
+)
 REM Download a project and set up live mode
 REM Usage: download.bat <url> [project-name]
 
