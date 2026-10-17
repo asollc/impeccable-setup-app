@@ -28,6 +28,11 @@ if errorlevel 1 (
     goto :end
 )
 
+REM Check for updates
+echo Checking for updates...
+python "%~dp0update.py"
+echo.
+
 if not exist "%PROJECT_PATH%" (
     echo ERROR: Path does not exist: %PROJECT_PATH%
     goto :end
