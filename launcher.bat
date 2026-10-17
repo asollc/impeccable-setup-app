@@ -43,6 +43,12 @@ REM Check for updates
 echo Checking for updates...
 python "%~dp0update.py"
 echo.
+REM Auto-apply if update was just staged
+if exist "%~dp0apply_update.bat" (
+    echo Applying staged update...
+    call "%~dp0apply_update.bat"
+    echo.
+)
 
 REM Optional target file
 set /p TARGET="Target file (e.g. src/routes/index.tsx, or Enter to skip): "
