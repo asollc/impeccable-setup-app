@@ -68,7 +68,14 @@ def check_and_update():
         
         app_dir = Path(__file__).parent
         stage_dir = app_dir / ".update_staged"
-        stage_dir.mkdir(exist_ok=True)
+        
+        # Clean up any existing staging (including nested ones from bugs)
+        if stage_dir.exists():
+            shutil.rmtree(stage_dir, ignore_errors=True)
+        # Also clean up any nested staging dirs that might have been created
+        for nested in app_dir.rglob(".update_staged"):
+            if nested != stage_dir:
+                shutil.rmtree(nested, ignore_errors=True)
         
         with tempfile.TemporaryDirectory() as tmpdir:
             zip_path = Path(tmpdir) / "update.zip"
