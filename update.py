@@ -67,15 +67,24 @@ def check_and_update():
         zip_url = f"https://github.com/{REPO}/archive/refs/tags/v{remote}.zip"
         
         app_dir = Path(__file__).parent
-        stage_dir = app_dir / ".update_staged"
         
-        # Clean up any existing staging (including nested ones from bugs)
+        # Aggressively clean up ALL staging dirs (including nested ones)
+        # Do this before defining stage_dir to catch everything
+        for _ in range(3):  # Multiple passes for nested structures
+            found = list(app_dir.rglob(".update_staged"))
+            if not found:
+                break
+            for p in found:
+                # Remove deepest first to avoid issues
+                try:
+                    shutil.rmtree(p, ignore_errors=False)
+                except:
+                    pass
+        
+        stage_dir = app_dir / ".update_staged"
+        # Final check
         if stage_dir.exists():
             shutil.rmtree(stage_dir, ignore_errors=True)
-        # Also clean up any nested staging dirs that might have been created
-        for nested in app_dir.rglob(".update_staged"):
-            if nested != stage_dir:
-                shutil.rmtree(nested, ignore_errors=True)
         
         with tempfile.TemporaryDirectory() as tmpdir:
             zip_path = Path(tmpdir) / "update.zip"
