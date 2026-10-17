@@ -41,6 +41,12 @@ REM Check for updates
 echo Checking for updates...
 python "%~dp0update.py"
 echo.
+REM Auto-apply if update was just staged
+if exist "%~dp0apply_update.bat" (
+    echo Applying staged update...
+    call "%~dp0apply_update.bat"
+    echo.
+)
 
 REM Check if the project path exists
 if not exist "%PROJECT_PATH%" (
