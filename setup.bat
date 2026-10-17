@@ -1,4 +1,10 @@
 @echo off
+REM Auto-apply pending update if exists
+if exist "%~dp0apply_update.bat" (
+    echo Applying pending update...
+    call "%~dp0apply_update.bat"
+    echo.
+)
 REM Impeccable Live Mode Setup - Windows Launcher
 REM Drag a project folder or zip onto this file, or run it and paste the path
 
