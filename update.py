@@ -117,7 +117,6 @@ xcopy /E /Y "{stage_dir}" "{app_dir}\\" >nul
 rmdir /S /Q "{stage_dir}"
 del "%~f0"
 echo Update complete! Version {remote} installed.
-pause
 """
             apply_bat.write_text(apply_content)
         
